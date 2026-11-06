@@ -5,17 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#11243a">
   <meta name="description" content="人力車の売上を50:50で分配。現金・クレカ・決済手数料4%を自動計算する無料シミュレーター。">
-  <title>人力車 売上精算シミュレーター</title>
+  <meta name="apple-mobile-web-app-title" content="人力車 売上精算">
+  <meta name="application-name" content="人力車 売上精算">
+  <title>人力車 売上精算</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=20261106">
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png?v=20261106">
+  <link rel="manifest" href="./site.webmanifest">
   <style>
     :root { color-scheme: light; --navy:#11243a; --blue:#274467; --green:#0c785e; --paper:#f5f7fb; --line:#dce5ed; --muted:#566578; --red:#ae3d42; }
     * { box-sizing: border-box; }
     body { margin:0; font-family:-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif; background:var(--paper); color:#1c2938; line-height:1.5; }
-    .hero { background:linear-gradient(145deg,#11243a,#244565); color:white; padding:40px 20px 64px; }
+    .hero { background:linear-gradient(145deg,#11243a,#244565); color:white; padding:12px 20px; }
     .wrap { max-width:560px; margin:auto; }
+    .brand-logo { display:block; width:100%; height:100%; object-fit:cover; }
+    .hero h1 { margin:0; font-size:inherit; aspect-ratio:4 / 1; overflow:hidden; }
     .eyebrow { letter-spacing:.17em; opacity:.76; font-size:11px; font-weight:700; }
     h1 { margin:8px 0 8px; font-size:clamp(22px,5.8vw,30px); font-weight:850; letter-spacing:.02em; }
     .subtitle { font-size:13px; color:#d4e1ef; margin:0; }
-    main { margin:-38px auto 40px; padding:0 15px; }
+    main { margin:12px auto 40px; padding:0 15px; }
     .panel { background:white; box-shadow:0 12px 34px rgba(20,45,76,.1); border:1px solid #e5eaf0; border-radius:20px; overflow:hidden; }
     .section { padding:23px 20px; border-top:1px solid #edf0f4; }
     .section:first-child { border-top:0; }
@@ -65,6 +72,8 @@
     summary { padding:14px; border-radius:11px; background:var(--navy); color:white; cursor:pointer; font-weight:700; min-height:48px; }
     #report-form { margin-top:18px; }
     #report-form input { font-size:18px; }
+    #report-form select { width:100%; min-height:48px; padding:12px; font:inherit; font-size:16px; border:0; background:white; color:#1c2938; }
+    #report-form select:focus-visible { outline:3px solid #274467; outline-offset:-3px; }
     #report-form .split { margin-bottom:14px; }
     button { min-height:46px; font-family:inherit; }
     button:disabled { cursor:not-allowed; opacity:.55; }
@@ -72,13 +81,13 @@
   </style>
 </head>
 <body>
-<header class="hero"><div class="wrap"><div class="eyebrow">RICKSHAW · SALES CALCULATOR</div><h1>人力車 売上精算</h1><p class="subtitle">総売上から、現金・クレカ・取り分・精算額を自動計算。</p></div></header>
+<header class="hero"><div class="wrap"><h1><img class="brand-logo" src="./logo.png" alt="人力車 売上精算／売上精算・売上報告ツール" width="2172" height="724"></h1></div></header>
 <main class="wrap"><div class="panel">
   <section class="section"><h2 class="step"><span class="n">1</span>総売上を入力</h2><label for="total">総売上</label><div class="inputwrap"><input id="total" type="text" inputmode="numeric" autocomplete="off" placeholder="例：34800" aria-describedby="total-note"><span class="unit">円</span></div><p class="hint" id="total-note" style="margin:8px 0 0">最初に1日の売上合計を入力してください。</p></section>
   <section class="section"><h2 class="step"><span class="n">2</span>現金・クレカの内訳</h2><p class="hint">どちらか一方を入力すると、もう一方が自動計算されます。</p><div class="split"><div><label for="cash">現金（自分が保有）</label><div class="inputwrap"><input id="cash" type="text" inputmode="numeric" autocomplete="off" placeholder="0"><span class="unit">円</span></div></div><div><label for="card">クレカ等（会社が保有）</label><div class="inputwrap"><input id="card" type="text" inputmode="numeric" autocomplete="off" placeholder="0"><span class="unit">円</span></div></div></div><p class="warning" id="warning" role="status" aria-live="polite"></p><div class="bar" aria-hidden="true"><div class="cash" id="barcash"></div><div class="card"></div></div><div class="legend"><span><i class="dot"></i>現金 <span id="cashpct">0</span>%</span><span><i class="dot carddot"></i>クレカ <span id="cardpct">0</span>%</span></div></section>
   <section class="section"><h2 class="step"><span class="n">3</span>取り分（50：50）</h2><div class="statrow"><div class="stat mine"><div class="label">個人の取り分</div><div class="value" id="mine">0円</div><div class="extra">総売上の50% − 手数料</div></div><div class="stat"><div class="label">会社の取り分</div><div class="value" id="company">0円</div><div class="extra">総売上の50% ＋ 手数料</div></div></div><div class="fee"><span>決済手数料（クレカ売上 × <b>4%</b>）</span><strong id="fee">0円</strong></div></section>
   <section class="section"><h2 class="step"><span class="n">4</span>最終精算</h2><div class="result" id="result"><div class="cap">最終精算額</div><div class="number" id="transfer">0円</div><div class="direction" id="direction">金額を入力してください</div></div><div class="actions"><button class="primary" id="copy" type="button">精算結果をコピー</button><button class="secondary" id="sample" type="button">入力例を表示（34,800円）</button><button class="secondary" id="clear" type="button">すべてクリア</button></div><label for="settlement-output">精算結果（手動コピー用）</label><textarea id="settlement-output" readonly hidden></textarea><div class="toast" id="toast" role="status" aria-live="polite"></div></section>
-<section class="section"><h2 class="step">売上報告</h2><details id="report-details"><summary>売上報告を作成</summary><form id="report-form"><p class="hint" id="report-note">カッコ内は自力の実績です。売上は円で入力すると、報告文では千円単位に変換します（34,800円 → 34.8）。精算の入力とは独立しています。</p><div class="split"><div><label for="r-trips">件数 合計（件）</label><div class="inputwrap"><input id="r-trips" type="text" inputmode="numeric" autocomplete="off" value="0" required aria-describedby="report-note"></div></div><div><label for="r-self-trips">件数 自力（件）</label><div class="inputwrap"><input id="r-self-trips" type="text" inputmode="numeric" autocomplete="off" value="0" required aria-describedby="report-note"></div></div></div><div class="split"><div><label for="r-guests">客数 合計（人）</label><div class="inputwrap"><input id="r-guests" type="text" inputmode="numeric" autocomplete="off" value="0" required aria-describedby="report-note"></div></div><div><label for="r-self-guests">客数 自力（人）</label><div class="inputwrap"><input id="r-self-guests" type="text" inputmode="numeric" autocomplete="off" value="0" required aria-describedby="report-note"></div></div></div><div class="split"><div><label for="r-sales">売上 合計（円）</label><div class="inputwrap"><input id="r-sales" type="text" inputmode="numeric" autocomplete="off" value="0" required aria-describedby="report-note"></div></div><div><label for="r-self-sales">売上 自力（円）</label><div class="inputwrap"><input id="r-self-sales" type="text" inputmode="numeric" autocomplete="off" value="0" required aria-describedby="report-note"></div></div></div><div class="actions"><button class="secondary" id="report-total" type="button">精算の総売上を取り込む</button><button class="secondary" id="report-same" type="button">自力実績を合計と同じにする</button></div><p id="report-error" class="warning" role="status"></p><label for="report-output">報告文（選択して手動コピーもできます）</label><textarea id="report-output" readonly></textarea><div class="actions"><button class="primary" id="report-copy" type="button">売上報告をコピー</button><button class="secondary" id="report-clear" type="button">売上報告をクリア</button></div><p class="toast" id="report-status" role="status"></p></form></details></section></div><p class="footer">精算ルール：総売上を半分ずつ分配し、クレカ等の売上に対する決済手数料4%は個人が負担します。<br>決済手数料は1円単位で四捨五入。端数が生じる場合は当事者間で確認してください。<br>入力データはこの端末内だけで計算し、外部へ送信しません。</p></main>
+<section class="section"><h2 class="step">売上報告</h2><details id="report-details"><summary>売上報告を作成</summary><form id="report-form"><p class="hint" id="report-note">カッコ内は自力の実績です。売上は円で入力すると、報告文では千円単位に変換します（34,800円 → 34.8）。売上の合計を入力すると自力売上にも反映します。自力売上は後から変更できます。</p><div class="split"><div><label for="r-trips">件数 合計（件）</label><div class="inputwrap"><select id="r-trips" required aria-describedby="report-note"><option value="" selected>選択してください</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option></select></div></div><div><label for="r-self-trips">件数 自力（件）</label><div class="inputwrap"><select id="r-self-trips" required aria-describedby="report-note"><option value="" selected>選択してください</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option></select></div></div></div><div class="split"><div><label for="r-guests">客数 合計（人）</label><div class="inputwrap"><select id="r-guests" required aria-describedby="report-note"><option value="" selected>選択してください</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select></div></div><div><label for="r-self-guests">客数 自力（人）</label><div class="inputwrap"><select id="r-self-guests" required aria-describedby="report-note"><option value="" selected>選択してください</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select></div></div></div><div class="split"><div><label for="r-sales">売上 合計（円）</label><div class="inputwrap"><input id="r-sales" type="text" inputmode="numeric" autocomplete="off" required aria-describedby="report-note"></div></div><div><label for="r-self-sales">売上 自力（円）</label><div class="inputwrap"><input id="r-self-sales" type="text" inputmode="numeric" autocomplete="off" required aria-describedby="report-note"></div></div></div><div class="actions"><button class="secondary" id="report-total" type="button">精算の総売上を取り込む</button><button class="secondary" id="report-same" type="button">自力実績を合計と同じにする</button></div><p id="report-error" class="warning" role="status"></p><label for="report-output">報告文（選択して手動コピーもできます）</label><textarea id="report-output" readonly></textarea><div class="actions"><button class="primary" id="report-copy" type="button">売上報告をコピー</button><button class="secondary" id="report-clear" type="button">売上報告をクリア</button></div><p class="toast" id="report-status" role="status"></p></form></details></section></div><p class="footer">精算ルール：総売上を半分ずつ分配し、クレカ等の売上に対する決済手数料4%は個人が負担します。<br>決済手数料は1円単位で四捨五入。端数が生じる場合は当事者間で確認してください。<br>入力データはこの端末内だけで計算し、外部へ送信しません。</p></main>
 <noscript><p>この計算機にはJavaScriptが必要です。ブラウザでJavaScriptを有効にして開いてください。</p></noscript>
 <script>
 (() => {
@@ -141,10 +150,14 @@
   const keys=['trips','guests','sales'];
   const reportFields=keys.flatMap(k=>[$('r-'+k),$('r-self-'+k)]);
   function report() {
+    if(reportFields.every(f=>f.value==='')) {
+      reportFields.forEach(f=>f.setAttribute('aria-invalid','false'));
+      $('report-error').textContent=''; $('report-output').value=''; $('report-copy').disabled=true; return '';
+    }
     const errors=[]; const values={};
     for (const k of keys) {
       const total=$('r-'+k), own=$('r-self-'+k);
-      for (const f of [total,own]) { const ok=validNumber(f.value); f.setAttribute('aria-invalid',String(!ok)); if(!ok) errors.push('件数・客数・売上は0以上の整数で入力してください。'); }
+      for (const f of [total,own]) { const ok=validNumber(f.value) && (k==='sales' || parse(f.value)<=(k==='trips'?10:20)); f.setAttribute('aria-invalid',String(!ok)); if(!ok) errors.push('件数・客数・売上は0以上の整数で入力してください。'); }
       values[k]=parse(total.value); values['self-'+k]=parse(own.value);
       if(validNumber(total.value)&&validNumber(own.value)&&values['self-'+k]>values[k]) { errors.push('自力の実績は合計以下にしてください。'); own.setAttribute('aria-invalid','true'); }
     }
@@ -154,15 +167,16 @@
     $('report-output').value=text; return text;
   }
   $('report-form').addEventListener('submit',e=>e.preventDefault());
-  reportFields.forEach(f=>f.addEventListener('input',()=>{ $('report-status').textContent='';report(); }));
+  reportFields.forEach(f=>f.addEventListener('input',()=>{ if(f.id==='r-sales') $('r-self-sales').value=f.value; $('report-status').textContent='';report(); }));
   $('report-same').addEventListener('click',()=>{keys.forEach(k=>$('r-self-'+k).value=$('r-'+k).value);report();$('report-status').textContent='自力実績を合計と同じにしました。';});
-  $('report-total').addEventListener('click',()=>{const s=calculate();if(s.invalid){$('report-status').textContent='精算の入力額を確認してください。';return;}$('r-sales').value=String(s.total);report();$('report-status').textContent='精算の総売上を取り込みました。';});
+  $('report-total').addEventListener('click',()=>{const s=calculate();if(s.invalid){$('report-status').textContent='精算の入力額を確認してください。';return;}$('r-sales').value=String(s.total);$('r-self-sales').value=$('r-sales').value;report();$('report-status').textContent='精算の総売上を取り込みました。';});
   $('report-copy').addEventListener('click',async()=>{const text=report();if(text)await copyText(text,$('report-output'),$('report-status'),'売上報告');});
-  $('report-clear').addEventListener('click',()=>{reportFields.forEach(f=>f.value='0');report();$('report-status').textContent='売上報告をクリアしました。';$('r-trips').focus();});
+  $('report-clear').addEventListener('click',()=>{reportFields.forEach(f=>f.value='');report();$('report-status').textContent='売上報告をクリアしました。';$('r-trips').focus();});
   report();
   calculate();
 })();
 </script>
 </body>
 </html>
+
 
