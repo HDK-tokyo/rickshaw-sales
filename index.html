@@ -4,13 +4,25 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#11243a">
-  <meta name="description" content="5割・4割・3割の人力車売上精算。現金保有者の例外計算と売上報告文の編集に対応。">
+  <meta name="description" content="人力車の売上精算・売上報告ツール。現金・クレカ売上の精算や、LINEに送る報告文の作成に対応。">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="人力車 売上精算・売上報告">
+  <meta property="og:title" content="人力車 売上精算・売上報告">
+  <meta property="og:description" content="現金・クレカ売上の精算と、LINEに送る売上報告文を作成できるツールです。">
+  <meta property="og:url" content="https://hdk-tokyo.github.io/rickshaw-sales/">
+  <meta property="og:image" content="https://hdk-tokyo.github.io/rickshaw-sales/icon-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="人力車 売上精算・売上報告">
+  <meta name="twitter:description" content="現金・クレカ売上の精算と、LINEに送る売上報告文を作成できるツールです。">
+  <meta name="twitter:image" content="https://hdk-tokyo.github.io/rickshaw-sales/icon-512.png">
   <meta name="apple-mobile-web-app-title" content="人力車 売上精算">
   <meta name="application-name" content="人力車 売上精算">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png">
   <link rel="manifest" href="./site.webmanifest">
-  <title>人力車 売上精算｜5割・4割・3割</title>
+  <title>人力車 売上精算・売上報告</title>
   <style>
     :root { color-scheme: light; --navy:#11243a; --blue:#274467; --green:#0c785e; --paper:#f5f7fb; --line:#dce5ed; --muted:#566578; --red:#ae3d42; }
     * { box-sizing: border-box; }
@@ -72,22 +84,27 @@
     .report-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     .report-grid input { font-size:19px; }
     /* セレクトのネイティブ矢印と内側フォーカス枠を除去。外側の .inputwrap だけを強調する。 */
-    .report-grid .selectwrap { display:flex; align-items:center; }
+    /* セレクト全体をタップ領域に。単位「件・人」と矢印はクリックを遮らない。 */
+    .report-grid .selectwrap { position:relative; display:block; }
     .report-grid .selectwrap select {
-      display:block; flex:1 1 auto; min-width:0; width:100%; min-height:51px;
-      padding:12px 8px 12px 12px; margin:0; border:0; border-radius:0;
+      display:block; width:100%; min-width:0; min-height:51px;
+      padding:12px 66px 12px 12px; margin:0; border:0; border-radius:0;
       background:transparent; color:#1c2938;
       font:700 17px -apple-system,BlinkMacSystemFont,sans-serif;
       appearance:none; -webkit-appearance:none; -moz-appearance:none;
       outline:none; box-shadow:none; cursor:pointer;
+      touch-action:manipulation;
     }
     .report-grid .selectwrap select:focus,
     .report-grid .selectwrap select:focus-visible { outline:none; box-shadow:none; }
-    .report-grid .selectwrap .unit { flex:0 0 auto; padding:0 5px 0 2px; white-space:nowrap; }
+    .report-grid .selectwrap .unit {
+      position:absolute; right:34px; top:50%; transform:translateY(-50%);
+      padding:0; white-space:nowrap; pointer-events:none;
+    }
     .report-grid .selectwrap::after {
-      content:""; flex:0 0 auto; width:8px; height:8px;
+      content:""; position:absolute; right:15px; top:50%; width:8px; height:8px;
       border-right:1.8px solid #52657a; border-bottom:1.8px solid #52657a;
-      transform:translateY(-2px) rotate(45deg); margin:0 15px 0 4px;
+      transform:translateY(-72%) rotate(45deg);
       pointer-events:none;
     }
     .report-grid select:has(option:checked[value=""]) { color:var(--muted); }
@@ -184,11 +201,11 @@
         <div class="split exception-input-grid">
           <div aria-hidden="true"></div>
           <div>
-            <label for="company-held-cash">現金（会社・他メンバーが所有）</label>
+            <label for="company-held-cash">現金（会社・他俥夫が保有）</label>
             <div class="inputwrap cash-held-field"><input type="text" id="company-held-cash" inputmode="numeric" autocomplete="off" placeholder="例：5000" aria-describedby="company-held-note company-held-error"><span class="unit">円</span></div>
           </div>
         </div>
-        <p class="hint cash-held-note" id="company-held-note">通常は現金を俥夫、クレカ売上を会社が保有します。会社・他メンバーが現金の一部または全部を保有している場合は、その金額を入力してください。通常は空欄・0円。入力分は会社側の保有額として精算します。クレカ手数料4%は変わりません。</p>
+        <p class="hint cash-held-note" id="company-held-note">通常は現金を俥夫、クレカ売上を会社が保有します。会社・他俥夫が現金の一部または全部を保有している場合は、その金額を入力してください。通常は空欄・0円。入力分は会社側の保有額として精算します。クレカ手数料4%は変わりません。</p>
         <p class="exception-error" id="company-held-error" role="status" aria-live="polite"></p>
       </div>
     </details>
@@ -308,9 +325,9 @@
     const companyHeld=card+companyHeldCash;
     const transfer=companyHeld-company; // positive: company pays person
     $('cash-label').textContent='現金（合計）';
-    $('company-held-error').textContent=heldInvalid?'会社・他メンバーが所有する現金は、現金売上以下の整数で入力してください。':'';
+    $('company-held-error').textContent=heldInvalid?'会社・他俥夫が保有する現金は、現金売上以下の整数で入力してください。':'';
     $('holder-notice').hidden=companyHeldCash===0 || heldInvalid;
-    $('holder-notice').textContent='現金'+money(cash)+'のうち、会社・他メンバー保有 '+money(companyHeldCash)+' ／ 自分保有 '+money(cash-companyHeldCash);
+    $('holder-notice').textContent='現金'+money(cash)+'のうち、会社・他俥夫保有 '+money(companyHeldCash)+' ／ 自分保有 '+money(cash-companyHeldCash);
     const inputInvalid=invalid || heldInvalid;
     for(const id of ['mine','company','fee','transfer']) $(id).textContent = inputInvalid ? '—' : money(({mine,company,fee,transfer:Math.abs(transfer)})[id]);
     $('result').classList.toggle('outgoing', transfer < 0 || inputInvalid);
@@ -329,7 +346,7 @@
   $('copy').addEventListener('click', async () => {
     const s=calculate();if(s.invalid||!s.total)return;
     const direction=s.transfer>0 ? '会社→自分' : s.transfer<0 ? '自分→会社' : '精算不要';
-    const summary=`【人力車 売上精算（${rate*100}%）】\n売上合計：${money(s.total)}\n現金：${money(s.cash)}\nクレカ：${money(s.card)}\n現金（会社・他メンバーが所有）：${money(s.companyHeldCash)}\n自分が保有する現金：${money(s.cash-s.companyHeldCash)}\n決済手数料（4%）：${money(s.fee)}\n個人取り分：${money(s.mine)}\n会社取り分：${money(s.company)}\n最終精算：${direction} ${money(Math.abs(s.transfer))}`;
+    const summary=`【人力車 売上精算（${rate*100}%）】\n売上合計：${money(s.total)}\n現金：${money(s.cash)}\nクレカ：${money(s.card)}\n現金（会社・他俥夫が保有）：${money(s.companyHeldCash)}\n自分が保有する現金：${money(s.cash-s.companyHeldCash)}\n決済手数料（4%）：${money(s.fee)}\n個人取り分：${money(s.mine)}\n会社取り分：${money(s.company)}\n最終精算：${direction} ${money(Math.abs(s.transfer))}`;
     try { await navigator.clipboard.writeText(summary); $('toast').textContent='精算結果をコピーしました。LINEなどに貼り付けられます。'; }
     catch { const t=document.createElement('textarea');t.value=summary;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();let ok=false;try{ok=document.execCommand('copy')}catch{}t.remove();$('toast').textContent=ok?'精算結果をコピーしました。':'自動コピーできませんでした。ブラウザで開いてお試しください。'; }
   });
