@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#11243a">
-  <meta name="description" content="5割・4割の人力車売上精算。現金保有者の例外計算と売上報告文の編集に対応。">
+  <meta name="description" content="5割・4割・3割の人力車売上精算。現金保有者の例外計算と売上報告文の編集に対応。">
   <meta name="apple-mobile-web-app-title" content="人力車 売上精算">
   <meta name="application-name" content="人力車 売上精算">
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png">
   <link rel="manifest" href="./site.webmanifest">
-  <title>人力車 売上精算｜5割・4割</title>
+  <title>人力車 売上精算｜5割・4割・3割</title>
   <style>
     :root { color-scheme: light; --navy:#11243a; --blue:#274467; --green:#0c785e; --paper:#f5f7fb; --line:#dce5ed; --muted:#566578; --red:#ae3d42; }
     * { box-sizing: border-box; }
@@ -71,8 +71,25 @@
     .report-group-title { font-size:13px; font-weight:800; margin:0 0 9px; color:#273a50; }
     .report-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     .report-grid input { font-size:19px; }
-    .report-grid select { width:100%; background:transparent; border:0; border-radius:12px; min-height:51px; padding:12px 8px; color:#1c2938; font:700 17px -apple-system,BlinkMacSystemFont,sans-serif; outline:0; }
-    .report-grid select:focus-visible { outline:2px solid var(--green); outline-offset:-2px; }
+    /* セレクトのネイティブ矢印と内側フォーカス枠を除去。外側の .inputwrap だけを強調する。 */
+    .report-grid .selectwrap { display:flex; align-items:center; }
+    .report-grid .selectwrap select {
+      display:block; flex:1 1 auto; min-width:0; width:100%; min-height:51px;
+      padding:12px 8px 12px 12px; margin:0; border:0; border-radius:0;
+      background:transparent; color:#1c2938;
+      font:700 17px -apple-system,BlinkMacSystemFont,sans-serif;
+      appearance:none; -webkit-appearance:none; -moz-appearance:none;
+      outline:none; box-shadow:none; cursor:pointer;
+    }
+    .report-grid .selectwrap select:focus,
+    .report-grid .selectwrap select:focus-visible { outline:none; box-shadow:none; }
+    .report-grid .selectwrap .unit { flex:0 0 auto; padding:0 5px 0 2px; white-space:nowrap; }
+    .report-grid .selectwrap::after {
+      content:""; flex:0 0 auto; width:8px; height:8px;
+      border-right:1.8px solid #52657a; border-bottom:1.8px solid #52657a;
+      transform:translateY(-2px) rotate(45deg); margin:0 15px 0 4px;
+      pointer-events:none;
+    }
     .report-grid select:has(option:checked[value=""]) { color:var(--muted); }
     .report-preview { background:#f4f7fa; border:1px solid var(--line); border-radius:13px; padding:13px 15px; margin:12px 0; }
     .report-preview-title { font-size:11px; font-weight:750; color:var(--muted); margin-bottom:8px; }
@@ -84,22 +101,23 @@
     .brand-logo { display:block; width:100%; height:auto; }
     main.wrap { margin-top:-14px; }
     .trial-tag { display:inline-block; background:#eaf2fb; color:#274467; padding:3px 9px; border-radius:6px; font-size:11px; margin-left:8px; vertical-align:middle; }
-    /* 5割が標準。必要な人だけ展開して4割に変更できる控えめな設定 */
+    /* 標準は5割。開閉式で4割・3割も選択可能。 */
     /* 全3か所の開閉ボタンを「売上報告を作成」の形に統一 */
     .rate-settings { background:white; }
     .rate-settings details { margin:0; }
     .accordion-trigger, .rate-settings summary.accordion-trigger,
     .cash-exception summary.accordion-trigger, button.accordion-trigger {
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      display:flex; align-items:center; justify-content:center; gap:10px;
       width:100%; min-height:48px; margin:0; padding:13px 16px;
       background:#eaf0f6; border:0; border-radius:11px; box-shadow:none;
       color:#28415d; font-size:14px; line-height:1.5; font-weight:750;
-      text-align:left; cursor:pointer; list-style:none; font-family:inherit;
+      text-align:center; cursor:pointer; list-style:none; font-family:inherit;
       appearance:none; -webkit-appearance:none;
     }
     summary.accordion-trigger::-webkit-details-marker { display:none; }
     .accordion-trigger:focus-visible { outline:3px solid #66a5f5; outline-offset:2px; }
-    .accordion-trigger .chevron { flex:none; font-size:11px; margin-left:auto; transition:transform .16s; }
+    .accordion-trigger .chevron { flex:none; font-size:11px; margin-left:0; transition:transform .16s; }
+    .accordion-trigger .trigger-label { display:inline-flex; align-items:center; justify-content:center; gap:4px; text-align:center; }
     details[open] > .accordion-trigger .chevron,
     .accordion-trigger[aria-expanded="true"] .chevron { transform:rotate(180deg); }
     .rate-settings .current-rate { margin-left:4px; font-size:12px; font-weight:650; color:#566b81; }
@@ -111,6 +129,9 @@
     .rate-choice button:focus-visible { outline:2px solid #4684d9; outline-offset:2px; }
     .share-caption { margin:11px 0 0; }
 
+    .cash-held-note { margin:12px 0 0; font-size:11px; line-height:1.65; }
+    .cash-exception .cash-held-field { max-width:none; }
+    .exception-input-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .cash-exception { margin:18px 0 0; }
     .cash-exception .inside { margin-top:18px; padding:17px 2px 0; border-top:1px solid var(--line); }
     .cash-exception .cash-held-field { max-width:260px; }
@@ -130,7 +151,7 @@
 <main class="wrap"><div class="panel">
   <section class="section rate-settings" aria-label="俥夫の取り分設定">
     <details id="rate-details">
-      <summary class="accordion-trigger"><span>俥夫の取り分 <span class="current-rate" id="current-rate">5割（50%）</span></span><span class="chevron" aria-hidden="true">▼</span></summary>
+      <summary class="accordion-trigger"><span class="trigger-label">俥夫の取り分 <span class="current-rate" id="current-rate">5割（50%）</span></span><span class="chevron" aria-hidden="true">▼</span></summary>
       <div class="rate-choice" role="group" aria-label="俥夫の取り分を選択">
         <button type="button" id="rate-50" class="active" aria-pressed="true">5割（50%）</button>
         <button type="button" id="rate-40" aria-pressed="false">4割（40%）</button>
@@ -141,18 +162,38 @@
   </section>
 
   <section class="section"><h2 class="step"><span class="n">1</span>総売上を入力</h2><label for="total">総売上</label><div class="inputwrap"><input id="total" type="text" inputmode="numeric" autocomplete="off" placeholder="例：34800" aria-describedby="total-note"><span class="unit">円</span></div><p class="hint" id="total-note" style="margin:8px 0 0">最初に1日の売上合計を入力してください。</p></section>
-  <section class="section"><h2 class="step"><span class="n">2</span>現金・クレカの内訳</h2><p class="hint">どちらか一方を入力すると、もう一方が自動計算されます。</p><div class="split"><div><label for="cash" id="cash-label">現金（自分が保有）</label><div class="inputwrap"><input id="cash" type="text" inputmode="numeric" autocomplete="off" placeholder="0"><span class="unit">円</span></div></div><div><label for="card">クレカ等（会社が保有）</label><div class="inputwrap"><input id="card" type="text" inputmode="numeric" autocomplete="off" placeholder="0"><span class="unit">円</span></div></div></div><p class="warning" id="warning" role="status" aria-live="polite"></p><div class="bar" aria-hidden="true"><div class="cash" id="barcash"></div><div class="card"></div></div><div class="legend"><span><i class="dot"></i>現金 <span id="cashpct">0</span>%</span><span><i class="dot carddot"></i>クレカ <span id="cardpct">0</span>%</span></div>
+  <section class="section">
+    <h2 class="step"><span class="n">2</span>現金・クレカの内訳</h2>
+    <p class="hint">どちらか一方を入力すると、もう一方が自動計算されます。</p>
+    <div class="split">
+      <div>
+        <label for="cash" id="cash-label">現金（自分が保有）</label>
+        <div class="inputwrap"><input id="cash" type="text" inputmode="numeric" autocomplete="off" placeholder="0"><span class="unit">円</span></div>
+      </div>
+      <div>
+        <label for="card">クレカ等（会社が保有）</label>
+        <div class="inputwrap"><input id="card" type="text" inputmode="numeric" autocomplete="off" placeholder="0"><span class="unit">円</span></div>
+      </div>
+    </div>
+    <p class="warning" id="warning" role="status" aria-live="polite"></p>
+    <div class="bar" aria-hidden="true"><div class="cash" id="barcash"></div><div class="card"></div></div>
+    <div class="legend"><span><i class="dot"></i>現金 <span id="cashpct">0</span>%</span><span><i class="dot carddot"></i>クレカ <span id="cardpct">0</span>%</span></div>
     <details id="cash-exception" class="cash-exception">
-      <summary class="accordion-trigger"><span>例外計算</span><span class="chevron" aria-hidden="true">▼</span></summary>
+      <summary class="accordion-trigger"><span class="trigger-label">例外計算</span><span class="chevron" aria-hidden="true">▼</span></summary>
       <div class="inside">
-        <p class="hint">会社が現金を保有している場合の計算です。通常は現金を俥夫、クレカ売上を会社が保有。会社が現金の一部または全部を保有している場合に、その金額を入力してください。通常は空欄・0円。クレカ手数料4%は変わりません。</p>
-        <label for="company-held-cash">会社が保有している現金</label>
-        <div class="inputwrap cash-held-field"><input type="text" id="company-held-cash" inputmode="numeric" autocomplete="off" placeholder="例：5000" aria-describedby="company-held-error"><span class="unit">円</span></div>
+        <div class="split exception-input-grid">
+          <div aria-hidden="true"></div>
+          <div>
+            <label for="company-held-cash">現金（会社・他メンバーが所有）</label>
+            <div class="inputwrap cash-held-field"><input type="text" id="company-held-cash" inputmode="numeric" autocomplete="off" placeholder="例：5000" aria-describedby="company-held-note company-held-error"><span class="unit">円</span></div>
+          </div>
+        </div>
+        <p class="hint cash-held-note" id="company-held-note">通常は現金を俥夫、クレカ売上を会社が保有します。会社・他メンバーが現金の一部または全部を保有している場合は、その金額を入力してください。通常は空欄・0円。入力分は会社側の保有額として精算します。クレカ手数料4%は変わりません。</p>
         <p class="exception-error" id="company-held-error" role="status" aria-live="polite"></p>
       </div>
     </details>
     <p class="holder-notice" id="holder-notice" hidden></p>
-</section>
+  </section>
   <section class="section"><h2 class="step"><span class="n">3</span><span id="split-label">取り分（50：50）</span></h2><div class="statrow"><div class="stat mine"><div class="label">個人の取り分</div><div class="value" id="mine">0円</div><div class="extra"><span id="mine-label">総売上の50% − 手数料</span></div></div><div class="stat"><div class="label">会社の取り分</div><div class="value" id="company">0円</div><div class="extra"><span id="company-label">総売上の50% ＋ 手数料</span></div></div></div><div class="fee"><span>決済手数料（クレカ売上 × <b>4%</b>）</span><strong id="fee">0円</strong></div></section>
   <section class="section"><h2 class="step"><span class="n">4</span>最終精算</h2><div class="result" id="result"><div class="cap">最終精算額</div><div class="number" id="transfer">0円</div><div class="direction" id="direction">金額を入力してください</div></div><div class="actions"><button class="primary" id="copy" type="button">精算結果をコピー</button><button class="secondary" id="sample" type="button">入力例を表示（34,800円）</button><button class="secondary" id="clear" type="button">すべてクリア</button></div><div class="toast" id="toast" role="status" aria-live="polite"></div></section>
 </div>
@@ -160,20 +201,20 @@
     <div class="section">
       <h2 class="step" id="report-title"><span class="n">＋</span>売上報告</h2>
       <p class="hint">精算計算とは別に、チームLINEに送る報告文を生成できます。カッコ内は自力の実績です。全て自力であれば、左側入力のみでカッコ内も反映可能です。</p>
-      <button type="button" class="secondary accordion-trigger" id="report-toggle" aria-controls="report-content" aria-expanded="false"><span>売上報告を作成</span><span class="chevron" aria-hidden="true">▼</span></button>
+      <button type="button" class="secondary accordion-trigger" id="report-toggle" aria-controls="report-content" aria-expanded="false"><span class="trigger-label">売上報告を作成</span><span class="chevron" aria-hidden="true">▼</span></button>
       <div class="report-content" id="report-content" hidden>
         <div class="report-group">
           <p class="report-group-title">件数</p>
           <div class="report-grid">
-            <div><label for="report-count">合計件数</label><div class="inputwrap"><select id="report-count" aria-label="report-count" required><option value="">選択してください</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option></select><span class="unit">件</span></div></div>
-            <div><label for="report-self-count">自力件数</label><div class="inputwrap"><select id="report-self-count" aria-label="report-self-count" required><option value="">選択してください</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option></select><span class="unit">件</span></div></div>
+            <div><label for="report-count">合計件数</label><div class="inputwrap selectwrap"><select id="report-count" aria-label="report-count" required><option value="">選ぶ</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option></select><span class="unit">件</span></div></div>
+            <div><label for="report-self-count">自力件数</label><div class="inputwrap selectwrap"><select id="report-self-count" aria-label="report-self-count" required><option value="">選ぶ</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option></select><span class="unit">件</span></div></div>
           </div>
         </div>
         <div class="report-group">
           <p class="report-group-title">客数</p>
           <div class="report-grid">
-            <div><label for="report-guests">合計客数</label><div class="inputwrap"><select id="report-guests" aria-label="report-guests" required><option value="">選択してください</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select><span class="unit">人</span></div></div>
-            <div><label for="report-self-guests">自力客数</label><div class="inputwrap"><select id="report-self-guests" aria-label="report-self-guests" required><option value="">選択してください</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select><span class="unit">人</span></div></div>
+            <div><label for="report-guests">合計客数</label><div class="inputwrap selectwrap"><select id="report-guests" aria-label="report-guests" required><option value="">選ぶ</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select><span class="unit">人</span></div></div>
+            <div><label for="report-self-guests">自力客数</label><div class="inputwrap selectwrap"><select id="report-self-guests" aria-label="report-self-guests" required><option value="">選ぶ</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option></select><span class="unit">人</span></div></div>
           </div>
         </div>
         <div class="report-group">
@@ -267,9 +308,9 @@
     const companyHeld=card+companyHeldCash;
     const transfer=companyHeld-company; // positive: company pays person
     $('cash-label').textContent='現金（合計）';
-    $('company-held-error').textContent=heldInvalid?'会社が保有している現金は、現金売上以下の整数で入力してください。':'';
+    $('company-held-error').textContent=heldInvalid?'会社・他メンバーが所有する現金は、現金売上以下の整数で入力してください。':'';
     $('holder-notice').hidden=companyHeldCash===0 || heldInvalid;
-    $('holder-notice').textContent='現金'+money(cash)+'のうち、会社保有 '+money(companyHeldCash)+' ／ 自分保有 '+money(cash-companyHeldCash);
+    $('holder-notice').textContent='現金'+money(cash)+'のうち、会社・他メンバー保有 '+money(companyHeldCash)+' ／ 自分保有 '+money(cash-companyHeldCash);
     const inputInvalid=invalid || heldInvalid;
     for(const id of ['mine','company','fee','transfer']) $(id).textContent = inputInvalid ? '—' : money(({mine,company,fee,transfer:Math.abs(transfer)})[id]);
     $('result').classList.toggle('outgoing', transfer < 0 || inputInvalid);
@@ -288,7 +329,7 @@
   $('copy').addEventListener('click', async () => {
     const s=calculate();if(s.invalid||!s.total)return;
     const direction=s.transfer>0 ? '会社→自分' : s.transfer<0 ? '自分→会社' : '精算不要';
-    const summary=`【人力車 売上精算（${rate*100}%）】\n売上合計：${money(s.total)}\n現金：${money(s.cash)}\nクレカ：${money(s.card)}\n会社が保有している現金：${money(s.companyHeldCash)}\n自分が保有する現金：${money(s.cash-s.companyHeldCash)}\n決済手数料（4%）：${money(s.fee)}\n個人取り分：${money(s.mine)}\n会社取り分：${money(s.company)}\n最終精算：${direction} ${money(Math.abs(s.transfer))}`;
+    const summary=`【人力車 売上精算（${rate*100}%）】\n売上合計：${money(s.total)}\n現金：${money(s.cash)}\nクレカ：${money(s.card)}\n現金（会社・他メンバーが所有）：${money(s.companyHeldCash)}\n自分が保有する現金：${money(s.cash-s.companyHeldCash)}\n決済手数料（4%）：${money(s.fee)}\n個人取り分：${money(s.mine)}\n会社取り分：${money(s.company)}\n最終精算：${direction} ${money(Math.abs(s.transfer))}`;
     try { await navigator.clipboard.writeText(summary); $('toast').textContent='精算結果をコピーしました。LINEなどに貼り付けられます。'; }
     catch { const t=document.createElement('textarea');t.value=summary;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();let ok=false;try{ok=document.execCommand('copy')}catch{}t.remove();$('toast').textContent=ok?'精算結果をコピーしました。':'自動コピーできませんでした。ブラウザで開いてお試しください。'; }
   });
@@ -336,7 +377,6 @@
     if(opening) {
       if(!$('report-sales').value.trim() && fields.total.value.trim()) { $('report-sales').value=fields.total.value; $('report-self-sales').value=fields.total.value; }
       updateReport();
-      $('report-count').focus();
     }
   });
   reportFields.forEach(field=>field.addEventListener(field.tagName==='SELECT' ? 'change' : 'input',()=>{
